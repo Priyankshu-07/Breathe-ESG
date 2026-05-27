@@ -1,9 +1,6 @@
 import json
 from typing import Any
-
 from apps.normalization.date_normalizer import parse_date, DateParseError
-
-
 def _parse_flight(segment: dict, warnings: list) -> dict:
     return {
         'segment_type':     'flight',
@@ -11,12 +8,9 @@ def _parse_flight(segment: dict, warnings: list) -> dict:
         'origin':           segment.get('origin_airport', segment.get('from', '')).upper().strip(),
         'destination':      segment.get('destination_airport', segment.get('to', '')).upper().strip(),
         'cabin_class':      segment.get('cabin_class', segment.get('class', 'unknown')).lower(),
-        # Distance not resolved here — normalization looks up airport pairs
         'distance':         segment.get('distance', None),
         'distance_unit':    segment.get('distance_unit', 'km'),
     }
-
-
 def _parse_hotel(segment: dict, warnings: list) -> dict:
     try:
         nights = float(segment.get('nights', segment.get('duration', 1)))
@@ -31,8 +25,6 @@ def _parse_hotel(segment: dict, warnings: list) -> dict:
         'hotel_name':   segment.get('hotel_name', segment.get('property', '')),
         'city':         segment.get('city', ''),
     }
-
-
 def _parse_ground(segment: dict, warnings: list) -> dict:
     raw_distance = segment.get('distance', segment.get('distance_km', None))
     try:
@@ -48,42 +40,21 @@ def _parse_ground(segment: dict, warnings: list) -> dict:
         'distance':       distance,
         'distance_unit':  segment.get('distance_unit', 'km'),
     }
-
-
 def parse(file_content: bytes) -> list[dict[str, Any]]:
-    """
-    Parser responsibility: source-specific cleanup only.
-    No emission factors, no distance lookups, no CO2e.
-    Normalization handles all of that.
-
-    Output per segment:
-        parse_status:    'ok' | 'warning' | 'failed'
-        parse_warnings:  list of strings
-        category:        str
-        segment_type:    'flight' | 'hotel' | 'ground'
-        trip_id:         str
-        traveller:       str
-        travel_date_raw: str (unparsed)
-        + segment-specific fields (origin, destination, nights, etc.)
-    """
     try:
         data = json.loads(file_content.decode('utf-8'))
     except (json.JSONDecodeError, UnicodeDecodeError) as e:
         raise ValueError(f"Could not parse travel JSON: {e}")
-
     trips = data.get('trips', [])
     results = []
-
     for trip in trips:
         trip_id = trip.get('trip_id', '')
         traveller = trip.get('traveller', trip.get('employee', ''))
         travel_date_raw = trip.get('travel_date', trip.get('date', ''))
-
         for segment in trip.get('segments', []):
             warnings = []
             parse_status = 'ok'
             seg_type = segment.get('type', '').lower()
-
             if seg_type == 'flight':
                 parsed = _parse_flight(segment, warnings)
             elif seg_type == 'hotel':
@@ -93,10 +64,8 @@ def parse(file_content: bytes) -> list[dict[str, Any]]:
             else:
                 warnings.append(f"Unknown segment type '{seg_type}', skipped.")
                 continue
-
             if warnings:
                 parse_status = 'warning'
-
             parsed.update({
                 'parse_status':    parse_status,
                 'parse_warnings':  warnings,
@@ -105,5 +74,4 @@ def parse(file_content: bytes) -> list[dict[str, Any]]:
                 'travel_date_raw': travel_date_raw,  # raw string, normalization parses it
             })
             results.append(parsed)
-
     return results
