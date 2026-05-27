@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.env
+
+# Uploaded files
+media/
+
+# Database
+db.sqlite3
+
+# Virtual env
+venv/
+env/
+
+# React
+node_modules/
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
