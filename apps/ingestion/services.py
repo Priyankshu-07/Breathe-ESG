@@ -36,7 +36,7 @@ def ingest_and_normalize(job: IngestionJob) -> None:
             failed_count += 1
     if failed_count > 0:
 
-        job.status = 'failed'
+        job.status = 'partial'
 
     else:
 

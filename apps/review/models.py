@@ -2,8 +2,6 @@ import uuid
 from django.db import models
 from apps.users.models import User
 from apps.emissions.models import NormalizedEmission
-
-
 class ReviewAction(models.Model):
     ACTION_CHOICES = [
         ('approve', 'Approved'),
