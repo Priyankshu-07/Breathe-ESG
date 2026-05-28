@@ -1,17 +1,32 @@
 import React, { useState, useCallback } from 'react';
-import { Upload as UploadIcon, FileSpreadsheet, Check, AlertCircle, X } from 'lucide-react';
+import {
+  Upload as UploadIcon,
+  FileSpreadsheet,
+  Check,
+  AlertCircle,
+  X,
+} from 'lucide-react';
+
 import Layout from '../components/Layout';
+import { useAuth, API_BASE } from '../contexts/AuthContext';
 
 type SourceType = 'SAP' | 'Utility' | 'Travel';
 
 const sourceTypes: SourceType[] = ['SAP', 'Utility', 'Travel'];
 
 export default function Upload() {
+  const { token } = useAuth();
+
   const [file, setFile] = useState<File | null>(null);
   const [sourceType, setSourceType] = useState<SourceType>('SAP');
   const [isDragging, setIsDragging] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+
+  const [uploadStatus, setUploadStatus] = useState<
+    'idle' | 'uploading' | 'success' | 'error'
+  >('idle');
+
   const [errorMessage, setErrorMessage] = useState('');
+  const [jobInfo, setJobInfo] = useState<any>(null);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -33,16 +48,20 @@ export default function Upload() {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
     setIsDragging(false);
 
     const files = e.dataTransfer.files;
+
     if (files && files[0]) {
       setFile(files[0]);
       setUploadStatus('idle');
     }
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setUploadStatus('idle');
@@ -61,15 +80,39 @@ export default function Upload() {
     setUploadStatus('uploading');
     setErrorMessage('');
 
-    // Simulate upload API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const formData = new FormData();
 
-    // Simulate success (90%) or error (10%)
-    if (Math.random() > 0.1) {
+      formData.append('file', file);
+      formData.append('source_type', sourceType.toLowerCase());
+
+      const response = await fetch(
+        `${API_BASE}/api/ingestion/upload/`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+
+        throw new Error(data.detail || 'Upload failed');
+      }
+
+      const data = await response.json();
+
+      setJobInfo(data);
       setUploadStatus('success');
-    } else {
+    } catch (err: any) {
       setUploadStatus('error');
-      setErrorMessage('Upload failed. Please try again.');
+
+      setErrorMessage(
+        err.message || 'Upload failed. Please try again.'
+      );
     }
   };
 
@@ -77,6 +120,7 @@ export default function Upload() {
     setFile(null);
     setUploadStatus('idle');
     setErrorMessage('');
+    setJobInfo(null);
   };
 
   return (
@@ -84,8 +128,13 @@ export default function Upload() {
       <div className="p-8 max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">Upload Emissions Data</h1>
-          <p className="text-gray-400">Upload your emissions data files for processing and review</p>
+          <h1 className="text-2xl font-bold text-white mb-2">
+            Upload Emissions Data
+          </h1>
+
+          <p className="text-gray-400">
+            Upload your emissions data files for processing and review
+          </p>
         </div>
 
         {/* Upload Card */}
@@ -96,10 +145,33 @@ export default function Upload() {
               <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-6">
                 <Check className="w-10 h-10 text-emerald-500" />
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Upload Successful!</h3>
-              <p className="text-gray-400 mb-6">
-                Your file has been uploaded and is now processing.
+
+              <h3 className="text-xl font-semibold text-white mb-2">
+                Upload Successful!
+              </h3>
+
+              <p className="text-gray-400 mb-2">
+                Your file has been uploaded successfully.
               </p>
+
+              {jobInfo && (
+                <div className="mb-6 text-sm text-gray-300 space-y-2">
+                  <p>
+                    <span className="font-medium text-white">
+                      Job ID:
+                    </span>{' '}
+                    {jobInfo.job_id}
+                  </p>
+
+                  <p>
+                    <span className="font-medium text-white">
+                      Status:
+                    </span>{' '}
+                    {jobInfo.status}
+                  </p>
+                </div>
+              )}
+
               <button
                 onClick={resetUpload}
                 className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
@@ -135,12 +207,17 @@ export default function Upload() {
                 {file ? (
                   <div className="flex items-center justify-center gap-4">
                     <FileSpreadsheet className="w-12 h-12 text-emerald-500" />
+
                     <div className="text-left">
-                      <p className="text-white font-medium">{file.name}</p>
+                      <p className="text-white font-medium">
+                        {file.name}
+                      </p>
+
                       <p className="text-gray-400 text-sm">
                         {(file.size / 1024).toFixed(2)} KB
                       </p>
                     </div>
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -155,9 +232,11 @@ export default function Upload() {
                 ) : (
                   <>
                     <UploadIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+
                     <p className="text-white font-medium mb-2">
                       Drag and drop your file here
                     </p>
+
                     <p className="text-gray-400 text-sm">
                       or click to browse (CSV, XLSX, XLS)
                     </p>
@@ -169,7 +248,10 @@ export default function Upload() {
               {uploadStatus === 'error' && (
                 <div className="mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3">
                   <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                  <p className="text-red-400 text-sm">{errorMessage}</p>
+
+                  <p className="text-red-400 text-sm">
+                    {errorMessage}
+                  </p>
                 </div>
               )}
 
@@ -178,9 +260,12 @@ export default function Upload() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Source Type
                 </label>
+
                 <select
                   value={sourceType}
-                  onChange={(e) => setSourceType(e.target.value as SourceType)}
+                  onChange={(e) =>
+                    setSourceType(e.target.value as SourceType)
+                  }
                   className="w-full md:w-64 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   disabled={uploadStatus === 'uploading'}
                 >
@@ -201,11 +286,13 @@ export default function Upload() {
                 {uploadStatus === 'uploading' ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+
                     Uploading...
                   </>
                 ) : (
                   <>
                     <UploadIcon className="w-5 h-5" />
+
                     Upload File
                   </>
                 )}
