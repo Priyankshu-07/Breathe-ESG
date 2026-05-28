@@ -62,7 +62,7 @@ export default function Jobs() {
 
       const data = await response.json();
 
-      setJobs(data);
+      setJobs(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Failed to load jobs.');
     } finally {
