@@ -48,7 +48,9 @@ export default function Login() {
 
         {/* Login Card */}
         <div className="bg-gray-900 rounded-2xl border border-gray-800 p-8">
-          <h2 className="text-xl font-semibold text-white mb-6">Sign in to your account</h2>
+          <h2 className="text-xl font-semibold text-white mb-6">
+            Sign in to your account
+          </h2>
 
           {error && (
             <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3">
@@ -59,18 +61,23 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                Email
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
+                Username
               </label>
+
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+
                 <input
                   id="email"
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-12 pr-4 py-3 text-white placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                  placeholder="you@company.com"
+                  placeholder="Enter your username"
                   required
                   disabled={isLoading}
                 />
@@ -78,11 +85,16 @@ export default function Login() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
                 Password
               </label>
+
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+
                 <input
                   id="password"
                   type="password"
@@ -112,10 +124,6 @@ export default function Login() {
             </button>
           </form>
         </div>
-
-        <p className="text-center text-gray-500 text-sm mt-6">
-          Demo: Enter any email and password to sign in
-        </p>
       </div>
     </div>
   );
